@@ -1,0 +1,50 @@
+name: APK 만들기
+
+on:
+  push:
+  workflow_dispatch:
+
+permissions:
+  contents: write
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: 앱 소스 압축 풀기
+        run: |
+          if [ -f source.zip ]; then unzip -o source.zip; fi
+          if [ -f app-src.zip ]; then unzip -o app-src.zip; fi
+          ls -R app
+
+      - uses: actions/setup-java@v4
+        with:
+          distribution: temurin
+          java-version: '17'
+
+      - uses: android-actions/setup-android@v3
+        with:
+          packages: 'platforms;android-34 build-tools;34.0.0 platform-tools'
+
+      - uses: gradle/actions/setup-gradle@v4
+        with:
+          gradle-version: '8.7'
+
+      - name: APK 빌드
+        run: gradle :app:assembleDebug --no-daemon --stacktrace
+
+      - name: 파일 이름 바꾸기
+        run: |
+          mkdir -p out
+          cp app/build/outputs/apk/debug/app-debug.apk out/overtime-alarm.apk
+
+      - name: 폰에서 받게 Release 로 올리기
+        uses: softprops/action-gh-release@v2
+        with:
+          tag_name: latest
+          name: 최신 APK
+          body: 폰 크롬으로 아래 overtime-alarm.apk 를 눌러 설치하세요.
+          files: out/overtime-alarm.apk
+          make_latest: true
