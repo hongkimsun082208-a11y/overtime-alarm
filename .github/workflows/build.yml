@@ -24,6 +24,20 @@ jobs:
           distribution: temurin
           java-version: '17'
 
+      - name: 서명 키 준비 (처음 한 번 만들어 저장소에 보관 — 덮어 설치가 되도록 늘 같은 키)
+        run: |
+          if [ ! -f signing/overtime.keystore ]; then
+            mkdir -p signing
+            keytool -genkeypair -keystore signing/overtime.keystore -storetype PKCS12 \
+              -storepass overtime -keypass overtime -alias overtime \
+              -keyalg RSA -keysize 2048 -validity 10000 -dname "CN=Overtime Alarm"
+            git config user.name "github-actions[bot]"
+            git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+            git add signing/overtime.keystore
+            git commit -m "서명 키 보관"
+            git push origin HEAD:${GITHUB_REF_NAME}
+          fi
+
       - uses: android-actions/setup-android@v3
         with:
           packages: 'platforms;android-34 build-tools;34.0.0 platform-tools'
